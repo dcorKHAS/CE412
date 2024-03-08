@@ -7,16 +7,19 @@
 #include <functional>
 
 
-
+//How to make the same code work for 2 servers with identical service time distribution?
+// 
+// 
+// 
 // Define the maximum simulation time
 
 const int MAX_TIME = 100;
-bool serverBusy = false;
-
+bool serverBusy[2] = { false, false};
+//int serverBusyCount = 0; // 0 or 1 or 2
 
 // Define the structure for events
 
-enum EventType { ARRIVAL, DEPARTURE };
+enum EventType { ARRIVAL, DEPARTURE};
 
 
 
@@ -135,20 +138,33 @@ void processArrival(Event e, std::queue<Event>& queue, std::default_random_engin
 
     scheduleEvent(e.time + arrivalDistribution(generator), ARRIVAL);
 
+    std::normal_distribution<double> serviceDistribution(3.2, 0.6);
+
+    //This  model cannot estimate for what fraction of time each server is busy
+    //but it can correctly estimate the waiting time for the customers
+    //Why?
+
+    if (!serverBusy[0] && !serverBusy[1]) {
+
+        //The servers are identical, so we can choose either one
 
 
-    if (!serverBusy) {
-
-        serverBusy = true;
-
-        std::normal_distribution<double> serviceDistribution(3.2, 0.6);
+        serverBusy[0] = true;
 
         scheduleEvent(e.time + serviceDistribution(generator), DEPARTURE);
 
     }
-    else {
+    else if (serverBusy[0] && serverBusy[1]){
 
         queue.push(e);
+
+    }
+    else {//one busy one not
+
+        serverBusy[1]= true;
+        
+        scheduleEvent(e.time + serviceDistribution(generator), DEPARTURE);
+
 
     }
 
@@ -158,7 +174,7 @@ void processArrival(Event e, std::queue<Event>& queue, std::default_random_engin
 
 void processDeparture(Event e, std::queue<Event>& queue, std::default_random_engine& generator) {
 
-    if (!queue.empty()) {
+    if (!queue.empty() ) {
 
         Event customer = queue.front();
 
@@ -169,10 +185,14 @@ void processDeparture(Event e, std::queue<Event>& queue, std::default_random_eng
         scheduleEvent(e.time + serviceDistribution(generator), DEPARTURE);
 
     }
+    else if (queue.empty() && serverBusy[1]){
+
+        serverBusy[1] = false;
+
+    }
+    //else if (queue.empty() && !serverBusy[1])
     else {
-
-        serverBusy = false;
-
+        serverBusy[0] = false;
     }
 
 }
