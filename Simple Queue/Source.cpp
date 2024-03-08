@@ -29,6 +29,7 @@ struct Event {
 
     EventType type;
 
+    int serverNumber=-1;
 };
 
 
@@ -55,7 +56,7 @@ std::priority_queue<Event, std::vector<Event>, CompareEvent> eventQueue;
 
 // Function prototypes
 
-void scheduleEvent(int time, EventType type);
+void scheduleEvent(int time, EventType type, int serverNumber);
 
 void processArrival(Event e, std::queue<Event>& queue, std::default_random_engine& generator);
 
@@ -81,7 +82,7 @@ int main() {
 
     // Schedule the first arrival
 
-    scheduleEvent(arrivalDistribution(generator), ARRIVAL);
+    scheduleEvent(arrivalDistribution(generator), ARRIVAL,-1);
 
 
 
@@ -116,13 +117,15 @@ int main() {
 
 
 
-void scheduleEvent(int time, EventType type) {
+void scheduleEvent(int time, EventType type, int serverNumber) {
 
     Event newEvent;
 
     newEvent.time = time;
 
     newEvent.type = type;
+
+    newEvent.serverNumber= serverNumber;
 
     eventQueue.push(newEvent);
 
@@ -136,22 +139,27 @@ void processArrival(Event e, std::queue<Event>& queue, std::default_random_engin
 
     // Schedule next arrival
 
-    scheduleEvent(e.time + arrivalDistribution(generator), ARRIVAL);
+    scheduleEvent(e.time + arrivalDistribution(generator), ARRIVAL,-1);
 
-    std::normal_distribution<double> serviceDistribution(3.2, 0.6);
-
+    std::normal_distribution<double> serviceDistribution[2] = 
+    {
+        std::normal_distribution<double>(3.2, 0.6), 
+        std::normal_distribution<double>(4.2, 0.6)
+    }; // [0] and [1]
+    
     //This  model cannot estimate for what fraction of time each server is busy
     //but it can correctly estimate the waiting time for the customers
     //Why?
 
-    if (!serverBusy[0] && !serverBusy[1]) {
-
-        //The servers are identical, so we can choose either one
+    //How should we modify the code if the servers are not identical?
 
 
+    if (!serverBusy[0]) {
+
+        
         serverBusy[0] = true;
 
-        scheduleEvent(e.time + serviceDistribution(generator), DEPARTURE);
+        scheduleEvent(e.time + serviceDistribution[0](generator), DEPARTURE,0);
 
     }
     else if (serverBusy[0] && serverBusy[1]){
@@ -159,11 +167,11 @@ void processArrival(Event e, std::queue<Event>& queue, std::default_random_engin
         queue.push(e);
 
     }
-    else {//one busy one not
+    else {
 
         serverBusy[1]= true;
         
-        scheduleEvent(e.time + serviceDistribution(generator), DEPARTURE);
+        scheduleEvent(e.time + serviceDistribution[1](generator), DEPARTURE,1);
 
 
     }
@@ -173,26 +181,31 @@ void processArrival(Event e, std::queue<Event>& queue, std::default_random_engin
 
 
 void processDeparture(Event e, std::queue<Event>& queue, std::default_random_engine& generator) {
+    
+    int serverNumber = e.serverNumber;
+
+
+    std::normal_distribution<double> serviceDistribution[2] =
+    {
+        std::normal_distribution<double>(3.2, 0.6),
+        std::normal_distribution<double>(4.2, 0.6)
+    };
 
     if (!queue.empty() ) {
 
         Event customer = queue.front();
 
         queue.pop();
+       
 
-        std::normal_distribution<double> serviceDistribution(3.2, 0.6);
-
-        scheduleEvent(e.time + serviceDistribution(generator), DEPARTURE);
-
-    }
-    else if (queue.empty() && serverBusy[1]){
-
-        serverBusy[1] = false;
+        scheduleEvent(e.time + serviceDistribution[serverNumber](generator), DEPARTURE, serverNumber);
 
     }
-    //else if (queue.empty() && !serverBusy[1])
-    else {
-        serverBusy[0] = false;
+    else  {
+
+        serverBusy[serverNumber] = false;
+
     }
+    
 
 }
