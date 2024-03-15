@@ -1,9 +1,10 @@
 #include <iostream>
 
 #include <queue>
+//https://en.cppreference.com/w/cpp/container/priority_queue
 
 #include <random>
-
+//https://en.cppreference.com/w/cpp/numeric/random
 #include <functional>
 
 
@@ -12,7 +13,8 @@
 
 const int MAX_TIME = 100;
 bool serverBusy = false;
-
+float numOfCustomer = 0;
+float totalWaitingTime = 0;
 
 // Define the structure for events
 
@@ -69,7 +71,7 @@ int main() {
 
 
     std::default_random_engine generator;
-
+    generator.seed();
     std::exponential_distribution<double> arrivalDistribution(1.0 / 4.5);
 
     std::normal_distribution<double> serviceDistribution(3.2, 0.6);
@@ -103,10 +105,11 @@ int main() {
 
     }
 
+    float average = static_cast<float>(totalWaitingTime) / static_cast<float>(numOfCustomer);
 
-
-    std::cout << "Simulation completed." << std::endl;
-
+    std::cout << "Simulation completed.\n Average Waiting time:" << average << std::endl;
+    std::cout << totalWaitingTime <<std::endl;
+    std::cout << numOfCustomer << std::endl;
     return 0;
 
 }
@@ -167,12 +170,13 @@ void processDeparture(Event e, std::queue<Event>& queue, std::default_random_eng
         std::normal_distribution<double> serviceDistribution(3.2, 0.6);
 
         scheduleEvent(e.time + serviceDistribution(generator), DEPARTURE);
-
+        totalWaitingTime += e.time - customer.time;
     }
     else {
 
         serverBusy = false;
 
     }
+    numOfCustomer++;
 
 }
