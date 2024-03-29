@@ -124,20 +124,27 @@ float simulate(
 			currentInventory += reorderingQuantity;
 		}
 		else {
+			nextDemand = new Event();
+			nextDemand->day = time + demandInterval;
+			nextDemand->type = 0;//
+			eventSchedule.push(*nextDemand);
 
 			if (currentInventory) {
 				currentInventory--;
-				nextDemand = new Event();
-				nextDemand->day = time + demandInterval;
-				nextDemand->type = 0;//
-				eventSchedule.push(*nextDemand);
+				
 
-			}
-			else {
-				Event* nextShipment= new Event();
-				nextShipment->day = time + delay;
-				nextShipment->type = 1;//
-				eventSchedule.push(*nextShipment);
+				if (currentInventory <= reorderingPoint) {
+					Event* nextShipment = new Event();
+					nextShipment->day = time + delay;
+					nextShipment->type = 1;//
+					eventSchedule.push(*nextShipment);
+
+				}
+
+
+			}else {
+
+				totalCost += shortageCost;
 
 
 			}
