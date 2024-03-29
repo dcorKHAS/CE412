@@ -119,6 +119,11 @@ float simulate(
 
 		Event nextEvent = eventSchedule.top();
 		eventSchedule.pop();
+
+		//The time passed between events
+		totalCost+=currentInventory*inventoryCost*(nextEvent.day - time);
+		time = nextEvent.day;
+
 		if (nextEvent.type) {
 
 			currentInventory += reorderingQuantity;
